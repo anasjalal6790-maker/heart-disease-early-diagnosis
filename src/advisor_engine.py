@@ -13,25 +13,42 @@ class AdvisorEngine:
     Adheres to the Single Responsibility Principle (SRP).
     """
     # دالة البناء وتحميل المفتاح السري بالمسار المطلق وتهيئة العميل
+    # دالة البناء وتحميل المفتاح السري بالمسار المطلق والبحث الهجين المتقدم
     def __init__(self):
-        # حساب المسار الفيزيائي المطلق لملف .env في المجلد الرئيسي للمشروع
-        # أينما كان موقع تشغيل الطرفية، سيجد هذا الأمر الملف بدقة هندسية عالية
-        current_dir = os.path.dirname(os.path.abspath(__file__))  # مجلد src
-        project_root = os.path.dirname(current_dir)  # المجلد الرئيسي للمشروع
-        dotenv_path = os.path.join(project_root, '.env')  # المسار المطلق لـ .env
+        # حساب المسار الفيزيائي المطلق لملف .env في المجلد الرئيسي للمشروع محلياً
+        current_dir = os.path.dirname(os.path.abspath(__file__))
+        project_root = os.path.dirname(current_dir)
+        dotenv_path = os.path.join(project_root, '.env')
             
-        # تحميل ملف البيئة من المسار المطلق المحسوب بدقة
+            # تحميل ملف البيئة من المسار المطلق بشكل آمن
         load_dotenv(dotenv_path=dotenv_path)
             
-        # جلب مفتاح API الخاص بـ Gemini من المتغيرات البيئية المحدثة
-        self.api_key = os.getenv("GEMINI_API_KEY")
+            # تهيئة متغير المفتاح السري فارغاً لبدء البحث الهجين المطور
+        self.api_key = None
+            
+            # 1. محاولة جلب المفتاح السري من أسرار منصة Streamlit (وهي الطريقة المضمونة والآمنة سحابياً)
+        try:
+            import streamlit as st
+            if "GEMINI_API_KEY" in st.secrets:
+                self.api_key = st.secrets["GEMINI_API_KEY"]
+                print("[*] Gemini API Key loaded from Streamlit Cloud Secrets.")
+        except Exception:
+                # تجاهل الخطأ في حال تشغيل الملف بشكل مستقل خارج بيئة Streamlit
+            pass
+            
+            # 2. إذا لم نعثر عليه سحابياً، نقوم بقراءته من ملف البيئة المحلي (.env) أو الطرفية
+        if not self.api_key:
+            self.api_key = os.getenv("GEMINI_API_KEY")
+            if self.api_key:
+                print("[*] Gemini API Key loaded from Local .env / Environment.")
+            
         self.client = None
             
-        # التحقق من وجود المفتاح وتهيئة العميل في حال توفره
+            # التحقق النهائي من وجود المفتاح وتهيئة العميل
         if not self.api_key:
-            print("[!] Warning: GEMINI_API_KEY not found in environment variables. Set it in .env file.")
+            print("[!] Warning: GEMINI_API_KEY not found in environment variables. Set it in .env file or Streamlit Secrets.")
         else:
-            # تهيئة عميل جوجل جين إيه آي الرسمي بالكامل للاتصال بالنماذج
+                # تهيئة عميل جوجل جين إيه آي الرسمي بالكامل للاتصال بالنماذج
             self.client = genai.Client(api_key=self.api_key)
             print("[*] Gemini API Client initialized successfully.")
 
