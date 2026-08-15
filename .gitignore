@@ -2,6 +2,5 @@ env_heart/
 __pycache__/
 *.pyc
 .env
-models/*.pkl
 models/*.h5
 models/*.keras
